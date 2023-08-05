@@ -4,6 +4,9 @@ import styled, { keyframes } from "styled-components"
 import { Link, useNavigate } from "react-router-dom"
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useDispatch, useSelector } from "react-redux";
+import { LoginCall, SignupCall } from "../redux/apiCalls";
+import { refreshState } from "../redux/userSlice";
 
 
 const Container = styled.div`
@@ -257,10 +260,12 @@ const Auth = () => {
     const [animate, setAnimate] = useState(false)
     const [logIn, setLogIn] = useState(true)
     const [signUp, setSignUp] = useState(false)
-
+    const dispatch = useDispatch()
+    const navigate = useNavigate()
+    const { currentUser,error } = useSelector((state) => state.user)
 
     const [userCredentials, setUserCredentials] = useState({
-        email: "",
+        userName: "",
         password: ""
     })
 
@@ -271,12 +276,18 @@ const Auth = () => {
 
     const handleLogin = (e) => {
         e.preventDefault()
-        toast("login Successful")
+        LoginCall(dispatch, userCredentials)
+
     }
+    useEffect(() => {
+        currentUser && navigate("/messenger")
+        currentUser && logIn && toast("login Successful")
+        currentUser && signUp && toast("signup Successful")
+    },[currentUser])
 
     const handleSignUp = (e) => {
         e.preventDefault()
-        toast("SignUp Successful")
+        SignupCall(dispatch,userCredentials)
     }
 
     const handleAnimation = (e, data) => {
@@ -286,19 +297,21 @@ const Auth = () => {
             setLogIn(false);
             setSignUp(true)
             setUserCredentials({
-                email: "",
+                userName: "",
                 password: ""
             })
+            dispatch(refreshState())
         } else {
             setLogIn(true)
             setSignUp(false)
             setUserCredentials({
-                email: "",
+                userName: "",
                 password: ""
             })
+            dispatch(refreshState)
         }
     }
-    console.log(userCredentials)
+    console.log(currentUser)
     return (
         <Fragment>
             <Container>
@@ -307,9 +320,11 @@ const Auth = () => {
                         <Heading className="left">Login</Heading>
                         <Subtitle>Welcome back you've been missed!🙂 </Subtitle>
                         <Form onSubmit={(e) => handleLogin(e)}>
+                        {error && <ErrorMsg> {(error === 401) && "Invalid Username or Password"}</ErrorMsg>}
+
                             <InputWrapper>
                                 <Label htmlFor="email" >Email<RequiredSpan>*</RequiredSpan></Label>
-                                <Input id="email" type="email" name="email" value={userCredentials.email} placeholder="johndoe@gmail.com" minLength={5} onChange={handleChange} required />
+                                <Input id="email" type="text" name="userName" value={userCredentials.userName} placeholder="johndoe@gmail.com" minLength={5} onChange={handleChange} required />
                             </InputWrapper>
                             <InputWrapper>
                                 <Label>Password<RequiredSpan>*</RequiredSpan></Label>
@@ -324,9 +339,10 @@ const Auth = () => {
                         <Heading className="right">Signup</Heading>
                         <Subtitle>Welcome to Connect. Meet with people around the world🙂 </Subtitle>
                         <Form onSubmit={(e) => handleSignUp(e)}>
+                        {error && <ErrorMsg> {(error === 401) && "Username already taken"}</ErrorMsg>}
                             <InputWrapper>
                                 <Label>Email<RequiredSpan>*</RequiredSpan></Label>
-                                <Input type="email" name="email" value={userCredentials.email} placeholder="johndoe@gmail.com" onChange={handleChange} required ></Input>
+                                <Input type="text" name="userName" value={userCredentials.userName} placeholder="johndoe@gmail.com" onChange={handleChange} required ></Input>
                             </InputWrapper>
                             <InputWrapper>
                                 <Label>Password<RequiredSpan>*</RequiredSpan></Label>
