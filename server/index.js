@@ -6,6 +6,7 @@ const cors = require("cors")
 const helmet = require("helmet")
 const morgan = require("morgan")
 const userRoute = require("./routes/auth")
+const chatRoute = require("./routes/chat")
 
 dotenv.config();
 
@@ -13,11 +14,10 @@ app.use(express.json())
 app.use(cors())
 app.use(helmet())
 app.use(morgan("common"))
-app.use("/api/auths", userRoute)
 
-app.get("/", (req, res) => {
-    console.log("ram")
-})
+app.use("/api/auths", userRoute)
+app.use("/api/chats", chatRoute)
+
 
 
 mongoose.connect(process.env.MONGO_URL).then(() => {

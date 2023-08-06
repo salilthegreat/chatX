@@ -1,7 +1,8 @@
 const router = require("express").Router()
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
+const verifyToken = require("../middleware");
 
 //jsonwebtoken creation function
 const createAccessToken = ({ userId, userName }) => {
@@ -11,8 +12,12 @@ const createAccessToken = ({ userId, userName }) => {
 //REGISTER
 
 router.post("/", async (req, res) => {
-    const { userName, password, profilePicture } = req.body;
-    const user = await User.findOne({ userName })
+    const { email, userName, password, profilePicture } = req.body;
+    let user = await User.findOne({ email })
+    if (user) {
+        return res.status(403).json("Email already taken")
+    }
+    user = await User.findOne({ userName })
     if (user) {
         return res.status(401).json("Username already taken")
     }
@@ -22,6 +27,7 @@ router.post("/", async (req, res) => {
 
         const newUser = new User({
             userName,
+            email,
             password: hashedPassword,
             profilePicture
         })
@@ -35,24 +41,42 @@ router.post("/", async (req, res) => {
 
 //LOGIN
 
-router.post("/login", async(req,res)=>{
-    const {userName,password} = req.body;
-    const user = await User.findOne({userName});
-    if(!user) {
-        return res.status(401).json("Invalid Username")
+router.post("/login", async (req, res) => {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+        return res.status(401).json("Invalid Email")
     }
-    const isValid = await bcrypt.compare(password,user.password);
-    if(!isValid){
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
         return res.status(401).json("Invalid Password")
     }
 
-    try {     
-        const accessToken = createAccessToken({ userId: user._id, userName })
-        res.status(200).json({...user._doc,accessToken})
+    try {
+        const accessToken = createAccessToken({ userId: user._id, userName: user.userName })
+        res.status(200).json({ ...user._doc, accessToken })
     } catch (error) {
         res.status(500).json(error)
     }
 
+})
+
+//SEARCH USER THROUGH API CALL
+router.get("/search", verifyToken, async (req, res) => {
+    try {
+        const { q } = req.query;
+        const filterdSearch = {
+            $or: [
+                { email: { $regex: q, $options: "i" } },
+                { userName: { $regex: q, $options: "i" } }
+            ],
+            _id: { $ne: req.user.userId } //excluding the currentuserId from the search
+        }
+        const searchUser = await User.find(filterdSearch).select("-password")
+        res.status(200).json(searchUser)
+    } catch (error) {
+        res.status(500).json(error)
+    }
 })
 
 

@@ -262,11 +262,12 @@ const Auth = () => {
     const [signUp, setSignUp] = useState(false)
     const dispatch = useDispatch()
     const navigate = useNavigate()
-    const { currentUser,error } = useSelector((state) => state.user)
+    const { currentUser, error } = useSelector((state) => state.user)
 
     const [userCredentials, setUserCredentials] = useState({
         userName: "",
-        password: ""
+        password: "",
+        email: ""
     })
 
     const handleChange = (e) => {
@@ -283,32 +284,28 @@ const Auth = () => {
         currentUser && navigate("/messenger")
         currentUser && logIn && toast("login Successful")
         currentUser && signUp && toast("signup Successful")
-    },[currentUser])
+    }, [currentUser])
 
     const handleSignUp = (e) => {
         e.preventDefault()
-        SignupCall(dispatch,userCredentials)
+        SignupCall(dispatch, userCredentials)
     }
 
     const handleAnimation = (e, data) => {
         e.preventDefault();
         setAnimate(!animate)
+        dispatch(refreshState())
+        setUserCredentials({
+            userName: "",
+            password: "",
+            email: ""
+        })
         if (data === "signup") {
             setLogIn(false);
             setSignUp(true)
-            setUserCredentials({
-                userName: "",
-                password: ""
-            })
-            dispatch(refreshState())
         } else {
             setLogIn(true)
             setSignUp(false)
-            setUserCredentials({
-                userName: "",
-                password: ""
-            })
-            dispatch(refreshState)
         }
     }
     console.log(currentUser)
@@ -320,11 +317,11 @@ const Auth = () => {
                         <Heading className="left">Login</Heading>
                         <Subtitle>Welcome back you've been missed!🙂 </Subtitle>
                         <Form onSubmit={(e) => handleLogin(e)}>
-                        {error && <ErrorMsg> {(error === 401) && "Invalid Username or Password"}</ErrorMsg>}
+                            {error && <ErrorMsg> {(error === 401) && "Invalid Username or Password"}</ErrorMsg>}
 
                             <InputWrapper>
                                 <Label htmlFor="email" >Email<RequiredSpan>*</RequiredSpan></Label>
-                                <Input id="email" type="text" name="userName" value={userCredentials.userName} placeholder="johndoe@gmail.com" minLength={5} onChange={handleChange} required />
+                                <Input id="email" type="email" name="email" value={userCredentials.email} placeholder="johndoe@gmail.com" minLength={5} onChange={handleChange} required />
                             </InputWrapper>
                             <InputWrapper>
                                 <Label>Password<RequiredSpan>*</RequiredSpan></Label>
@@ -339,10 +336,15 @@ const Auth = () => {
                         <Heading className="right">Signup</Heading>
                         <Subtitle>Welcome to Connect. Meet with people around the world🙂 </Subtitle>
                         <Form onSubmit={(e) => handleSignUp(e)}>
-                        {error && <ErrorMsg> {(error === 401) && "Username already taken"}</ErrorMsg>}
+                            {error && <ErrorMsg> {(error === 401) && "Username already taken"}</ErrorMsg>}
+                            {error && <ErrorMsg> {(error === 403) && "Email already taken"}</ErrorMsg>}
                             <InputWrapper>
                                 <Label>Email<RequiredSpan>*</RequiredSpan></Label>
-                                <Input type="text" name="userName" value={userCredentials.userName} placeholder="johndoe@gmail.com" onChange={handleChange} required ></Input>
+                                <Input type="email" name="email" value={userCredentials.email} placeholder="johndoe@gmail.com" onChange={handleChange} required ></Input>
+                            </InputWrapper>
+                            <InputWrapper>
+                                <Label>Username<RequiredSpan>*</RequiredSpan></Label>
+                                <Input type="text" name="userName" value={userCredentials.userName} placeholder="john doe" onChange={handleChange} required ></Input>
                             </InputWrapper>
                             <InputWrapper>
                                 <Label>Password<RequiredSpan>*</RequiredSpan></Label>
