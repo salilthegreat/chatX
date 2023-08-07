@@ -125,7 +125,7 @@ const RightdivOverlay = styled.div`
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-color: pink;
+    background-color: lightblue;
     /* background-color:${props => props.logo ? "white" : "transparent"}; */
 `
 
@@ -206,7 +206,7 @@ border: none;
 border-radius: 10px;
 font-weight: 400;
 font-size: 14px;
-background-color: var(--secondary-blue);
+background-color:${(props)=> props.signup ? "lightblue": "lightpink"} ;
 color: #FFFFFF;
 width: 100%;
 cursor: pointer;
@@ -351,7 +351,7 @@ const Auth = () => {
                                 <Input type="password" name="password" value={userCredentials.password} placeholder="password" onChange={handleChange} required minLength={5}></Input>
                             </InputWrapper>
                             <ButtonWrapper>
-                                <Button type="submit">Sign Up</Button>
+                                <Button type="submit" signup={true}>Sign Up</Button>
                             </ButtonWrapper>
                         </Form>
                     </Rightdiv>

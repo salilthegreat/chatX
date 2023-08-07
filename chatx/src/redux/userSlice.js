@@ -24,9 +24,14 @@ export const UserSlice = createSlice({
         refreshState:(state)=>{
             state.error = null;
             state.loading = false
+        },
+        logout:(state)=>{
+            state.currentUser = null;
+            state.error = null;
+            state.loading = false
         }
     }
 })
 
-export const {apiCallStart,apiCallEnd,authSucces,refreshState} = UserSlice.actions;
+export const {apiCallStart,apiCallEnd,authSucces,refreshState,logout} = UserSlice.actions;
 export default UserSlice.reducer

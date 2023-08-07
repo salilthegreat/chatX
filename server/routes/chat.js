@@ -7,19 +7,19 @@ const router = require("express").Router();
 //CREATE A CHAT OR FETCH A CHAT WITH 2 USERS
 router.post("/createchat", verifyToken, async (req, res) => {
     let chatExist = await Chat.findOne({ isGroupChat: false, members: { $all: [req.user.userId, req.body.recieverId] } }).populate("members", "-password").populate("latestMessage")
-    chatExist = await User.populate(chatExist, { path: "latestMessage.sender", select: "name email profilePicture" })
+    chatExist = await User.populate(chatExist, { path: "latestMessage.sender", select: "-password" })
 
     if (chatExist) { return res.status(200).json(chatExist) }
 
     try {
-        const newchat = new Chat(
+        const newchat = await Chat.create(
             {
                 chatName: "sender",
                 members: [req.user.userId, req.body.recieverId]
             }
         );
-        let savedChat = await newchat.save();
-        savedChat = await (await User.populate(savedChat, { path: "members", select: "-password" })).populate("latestMessage")
+        let savedChat = Chat.findById(newchat._id).populate("members","-password").populate("latestMessage")
+        savedChat = await User.populate(savedChat, { path: "latestMessage.sender", select: "-password" })
         res.status(201).json(savedChat)
     } catch (error) {
         res.status(500).json(error.message)
@@ -30,10 +30,10 @@ router.post("/createchat", verifyToken, async (req, res) => {
 //FIND ALL CHATS OF A USER
 router.get("/getallchat", verifyToken, async (req, res) => {
     try {
-        let chats = await Chat.find({ members: { $in: [req.user.userId] } }).populate("members", "-password");
-        res.status(200).json(chats).sort({ updatedAt: -1 })
-
+        let chats = await Chat.find({ members: { $in: [req.user.userId] } }).populate("members", "-password").populate("admin","-password").sort({ updatedAt: -1 });
         chats = await User.populate(chats, { path: "latestMessage.sender", select: "-password" })
+        res.status(200).json(chats)
+
     } catch (error) {
         res.status(500).json(error.message)
     }
