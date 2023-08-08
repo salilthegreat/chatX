@@ -1,0 +1,17 @@
+.quill{
+ width: 100%;
+ box-sizing: border-box;
+}
+div.ql-toolbar.ql-snow{
+    /* border: none; */
+    border-top: 1px solid gray;
+    border-bottom: 0;
+}
+div.ql-editor.ql-blank >p{
+    height: 20px;
+}
+
+div.ql-toolbar.ql-snow >.ql-formats {
+    margin-right: 5px;
+    border-right:1px solid black;
+}

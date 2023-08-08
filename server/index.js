@@ -7,6 +7,7 @@ const helmet = require("helmet")
 const morgan = require("morgan")
 const userRoute = require("./routes/auth")
 const chatRoute = require("./routes/chat")
+const messageRoute = require("./routes/message")
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(morgan("common"))
 
 app.use("/api/auths", userRoute)
 app.use("/api/chats", chatRoute)
+app.use("/api/messages", messageRoute)
 
 
 
