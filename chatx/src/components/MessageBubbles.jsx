@@ -23,6 +23,7 @@ display: flex;
 gap: 5px;
 align-items: center;
 flex-direction:${(props) => props.own ? "row-reverse" : "row"};
+overflow: hidden;
 `
 
 const UserImg = styled.img`
@@ -36,10 +37,11 @@ cursor: pointer;
 const UserMessage = styled.div`
     font-weight: 300;
     border-radius: 20px;
-    padding: 5px 10px;
+    padding: 5px 5px;
     max-width: 300px;
     background-color: ${props => props.own ? "lightgreen" : "lightpink"};
     color: ${props => props.own ? "black" : "white"};
+    overflow: inherit;
     `
 
 // const TimeAgo = styled.span`

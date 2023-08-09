@@ -7,7 +7,9 @@ const helmet = require("helmet")
 const morgan = require("morgan")
 const userRoute = require("./routes/auth")
 const chatRoute = require("./routes/chat")
-const messageRoute = require("./routes/message")
+const messageRoute = require("./routes/message");
+const {Server} = require("socket.io")
+
 
 dotenv.config();
 
@@ -28,6 +30,30 @@ mongoose.connect(process.env.MONGO_URL).then(() => {
     console.log(error)
 })
 
-app.listen(5000, () => {
+
+const server = app.listen(5000, () => {
     console.log("App is listening")
 })
+
+const io = new Server(server,{
+    cors:{
+        origin:"http://localhost:3000"
+    }
+})
+
+io.on("connection",socket=>{
+   console.log("A device connected successfully")
+   socket.on("joinchat",(room)=>{
+    socket.join(room);
+    console.log("A user joined room" + room)
+   })
+   socket.on("send message", (message)=>{
+    console.log("message sent to " + message.chatId._id)
+    socket.to(message.chatId._id).emit("recieve message",(message))
+   })
+    socket.on("disconnect",()=>{
+        console.log("A user disconnected")
+    })
+})
+
+

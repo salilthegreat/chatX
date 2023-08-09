@@ -3,7 +3,7 @@ import Navbar from "../components/Navbar"
 import styled from "styled-components"
 import { Search, Send, Visibility } from '@mui/icons-material'
 import { useDispatch, useSelector } from 'react-redux'
-import {  logout } from '../redux/userSlice'
+import { logout } from '../redux/userSlice'
 import { userRequest } from '../requestMethods'
 import MessageUsers from '../components/MessageUsers'
 import MessageBubbles from '../components/MessageBubbles'
@@ -15,6 +15,7 @@ import UserDetailsModal from '../configs/userProfileModal'
 import UpdateGroupChatModal from '../configs/updateGroupChatModal'
 import { toast } from 'react-toastify'
 import Editor from '../configs/Editor/Editor'
+import { io } from "socket.io-client"
 
 
 const Container = styled.div`
@@ -269,217 +270,255 @@ const Messenger = () => {
     const [loading, setLoading] = useState(true)
     const [query, setQuery] = useState("")
     const [searchedUser, setSearchedUser] = useState([])
-    const [fetchAgain, setFetchAgain] = useState(false)
+    const [fetchAgain, setFetchAgain] = useState(true)
     const [quilValue, setQuilValue] = useState("")
 
     const [fetchMessages, setFetchMessages] = useState([])
     const [newMessage, setNewMessage] = useState("")
     const scrollRef = useRef()
 
+    //Socket 
+    const [socket, setSocket] = useState(null)
 
-    //TO SCROLL THE MESSAGE INTO VIEW
     useEffect(() => {
-        scrollRef.current?.scrollIntoView({ behavior: "smooth" })
-    }, [conversation?._id, quilValue])
-    //FETCH ALL CHATS OF USER
+        const s = io("http://localhost:5000")
+        setSocket(s)
+        return () => {
+            s.disconnect()
+        }
+
+    }, [])
+
     useEffect(() => {
-        setLoading(true)
-        const getChats = async () => {
-            try {
-                const res = await userRequest.get("/chats/getallchat");
-                setChats(res.data)
-            } catch (error) {
-                console.log(error)
-            }
-        }
-        setLoading(false)
-        getChats()
-    }, [fetchAgain])
-
-    //SEARCH USER USING QUERY
-    useEffect(() => {
-        setLoading(true)
-        const searchUser = async () => {
-            try {
-                const res = query.length > 1 && await userRequest.get(`/auths/search?q=${query}`)
-                console.log(res.data)
-                setSearchedUser(res.data)
-            } catch (error) {
-                console.log(error)
-            }
-        }
-        setLoading(false)
-        searchUser()
-    }, [query])
-
-    //CREATE OR FETCH A CONVERSATION ON CLICKING THE USER
-
-    const handleInitiateConversation = async (recieverId) => {
-        try {
-            const res = await userRequest.post("/chats/createchat", { recieverId });
-            !chats.some((chat) => chat._id === res.data._id) && setChats((prev) => [...prev, res.data])
-            console.log(res.data)
-            setQuery("")
-            setSelectedChat(res.data)
-            setConversation(res.data)
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-    //FETCHING ALL MESSAGES 
-    const getAllMessage = async () => {
         if (conversation) {
+            socket?.emit("joinchat", conversation?._id)
+        }
+    }, [conversation])
+
+    //FETCH SOCKET MESSAGE AND SHOW
+
+    useEffect(()=>{
+        socket?.on("recieve message",(message)=>{
+            setNewMessage(message)
+            // console.log(message)
+        })
+    })
+
+        useEffect(() => {
+            if(conversation){
+                if(conversation?._id == newMessage?.chatId?._id){
+                    setFetchMessages((prev)=>[...prev,newMessage])
+                }
+            }
+        }, [newMessage])
+
+        console.log(conversation?._id)
+
+        //TO SCROLL THE MESSAGE INTO VIEW
+        useEffect(() => {
+            scrollRef.current?.scrollIntoView({ behavior: "smooth" })
+        }, [conversation?._id, fetchMessages])
+
+        //FETCH ALL CHATS OF USER
+        useEffect(() => {
+            setLoading(true)
+            const getChats = async () => {
+                try {
+                    const res = await userRequest.get("/chats/getallchat");
+                    setChats(res.data)
+                } catch (error) {
+                    console.log(error)
+                }
+            }
+            setLoading(false)
+            getChats()
+        }, [fetchAgain])
+
+        //SEARCH USER USING QUERY
+        useEffect(() => {
+            setLoading(true)
+            const searchUser = async () => {
+                try {
+                    const res = query.length > 1 && await userRequest.get(`/auths/search?q=${query}`)
+                    console.log(res.data)
+                    setSearchedUser(res.data)
+                } catch (error) {
+                    console.log(error)
+                }
+            }
+            setLoading(false)
+            searchUser()
+        }, [query])
+
+        //CREATE OR FETCH A CONVERSATION ON CLICKING THE USER
+
+        const handleInitiateConversation = async (recieverId) => {
             try {
-                const res = await userRequest.get(`/messages/${conversation?._id}`)
-                console.log(res.data)
-                setFetchMessages(res.data)
+                const res = await userRequest.post("/chats/createchat", { recieverId });
+                !chats.some((chat) => chat._id === res.data._id) && setChats((prev) => [...prev, res.data])
+                // console.log(res.data)
+                setQuery("")
+                setSelectedChat(res.data)
+                setConversation(res.data)
             } catch (error) {
-                toast(error.response.message)
+                console.log(error)
             }
         }
-    }
 
-    useEffect(() => {
-        getAllMessage()
-    }, [conversation, quilValue])
-
-    //SENDING MESSAGE
-    const sendMessage = async (e) => {
-
-        if (quilValue) {
-
-            try {
-                const res = await userRequest.post("/messages", {
-                    chatId: conversation._id,
-                    message: quilValue
-                })
-                setFetchMessages((prev) => [...prev, res.data])
-                setNewMessage("")
-                console.log(res.data)
-
-            } catch (error) {
-                toast(error.response.message)
+        //FETCHING ALL MESSAGES 
+        const getAllMessage = async () => {
+            if (conversation) {
+                try {
+                    const res = await userRequest.get(`/messages/${conversation?._id}`)
+                    // console.log(res.data)
+                    setFetchMessages(res.data)
+                } catch (error) {
+                    toast(error.response.message)
+                }
             }
         }
-    }
 
-    const handleSelectConversation = (chat) => {
-        setSelectedChat(chat)
-        setConversation(chat)
-    }
+        useEffect(() => {
+            getAllMessage()
+        }, [conversation])
 
-    const handleUpdateProfile = () => {
+        //SENDING MESSAGE
+        const sendMessage = async (e) => {
 
-    }
+            if (quilValue) {
 
-    const handleLogout = () => {
-        dispatch(logout())
-        navigate("/")
-    }
+                try {
+                    const res = await userRequest.post("/messages", {
+                        chatId: conversation._id,
+                        message: quilValue
+                    })
+                    setFetchMessages((prev) => [...prev, res.data])
+                    socket?.emit("send message", res.data)
+                    // setNewMessage("")
+                    // console.log(res.data)
 
-    return (
-        <Fragment>
-            <Navbar />
-            <Container>
-                <Left>
-                    <LeftWrapper>
-                        {loading && <ChatLoader />}
-                        <LeftTop>
-                            <LeftTopHead>
-                                <HeaderWrapper>
-                                    Recent Chats
-                                </HeaderWrapper>
-                                <GroupChatModal fetchAgain={fetchAgain} setFetchAgain={setFetchAgain} setSelectedChat={setSelectedChat} setConversation={setConversation}
-                                >
-                                    <Button>New Group Chat +</Button>
-                                </GroupChatModal>
-                            </LeftTopHead>
-                            <SearchWrapper>
-                                <SearchInput placeholder='Search for friends...' onChange={(e) => setQuery(e.target.value)} />
-                                <Search style={{ position: "absolute", right: "55px", height: "15px", color: "gray" }} />
-                            </SearchWrapper>
-                        </LeftTop>
-                        {(query?.length > 1) ?
-                            <UserProfiles>
-                                {searchedUser?.map((user) => (<>
-                                    <Users onClick={() => handleInitiateConversation(user._id)}>
-                                        <UserImg src={user?.profilePicture ? user.profilePicture : 'http://localhost:5000/static/profilePic.png'} />
-                                        <UserName>{user?.userName}</UserName>
-                                    </Users>
-                                </>))}
-                            </UserProfiles> :
-                            <UserProfiles >
-                                {chats?.map((chat) => (
-                                    <ChatWrapper style={{ backgroundColor: (chat._id === selectedChat._id) ? "lightpink" : "lightblue" }} onClick={() => handleSelectConversation(chat)}>
-                                        <MessageUsers chat={chat} key={chat._id} />
-                                    </ChatWrapper>
-                                ))}
-                            </UserProfiles>
-                        }
-                    </LeftWrapper>
-                </Left>
+                } catch (error) {
+                    toast(error.response.message)
+                }
+            }
+        }
 
-                {/* Message Section */}
+        const handleSelectConversation = (chat) => {
+            setSelectedChat(chat)
+            setConversation(chat)
+        }
 
-                <Middle>
-                    <MiddleWrapper>
-                        {conversation ? <>
-                            <MessageTop>
-                                <MiddleHeaderWrapper>
-                                    <UserImg src={conversation.isGroupChat ? "" : ""} />
-                                    <MessageBanner>{(conversation.isGroupChat) ? conversation.chatName : GetSenderId(currentUser._id, conversation.members)}</MessageBanner>
-                                    {conversation.isGroupChat ? <UpdateGroupChatModal conversation={conversation}
-                                        setConversation={setConversation}
-                                        selectedChat={selectedChat}
-                                        setSelectedChat={setSelectedChat}
-                                        fetchAgain={fetchAgain}
-                                        setFetchAgain={setFetchAgain}
+        const handleUpdateProfile = () => {
+
+        }
+
+        const handleLogout = () => {
+            dispatch(logout())
+            navigate("/")
+        }
+
+        return (
+            <Fragment>
+                <Navbar />
+                <Container>
+                    <Left>
+                        <LeftWrapper>
+                            {loading && <ChatLoader />}
+                            <LeftTop>
+                                <LeftTopHead>
+                                    <HeaderWrapper>
+                                        Recent Chats
+                                    </HeaderWrapper>
+                                    <GroupChatModal fetchAgain={fetchAgain} setFetchAgain={setFetchAgain} setSelectedChat={setSelectedChat} setConversation={setConversation}
                                     >
-                                        <Visibility />
-                                    </UpdateGroupChatModal> :
-                                        <UserDetailsModal user={GetSenderDetails(currentUser._id, conversation.members)}>
+                                        <Button>New Group Chat +</Button>
+                                    </GroupChatModal>
+                                </LeftTopHead>
+                                <SearchWrapper>
+                                    <SearchInput placeholder='Search for friends...' onChange={(e) => setQuery(e.target.value)} />
+                                    <Search style={{ position: "absolute", right: "55px", height: "15px", color: "gray" }} />
+                                </SearchWrapper>
+                            </LeftTop>
+                            {(query?.length > 1) ?
+                                <UserProfiles>
+                                    {searchedUser?.map((user) => (<>
+                                        <Users onClick={() => handleInitiateConversation(user._id)}>
+                                            <UserImg src={user?.profilePicture ? user.profilePicture : 'http://localhost:5000/static/profilePic.png'} />
+                                            <UserName>{user?.userName}</UserName>
+                                        </Users>
+                                    </>))}
+                                </UserProfiles> :
+                                <UserProfiles >
+                                    {chats?.map((chat) => (
+                                        <ChatWrapper style={{ backgroundColor: (chat._id === selectedChat._id) ? "lightpink" : "lightblue" }} onClick={() => handleSelectConversation(chat)}>
+                                            <MessageUsers chat={chat} key={chat._id} />
+                                        </ChatWrapper>
+                                    ))}
+                                </UserProfiles>
+                            }
+                        </LeftWrapper>
+                    </Left>
+
+                    {/* Message Section */}
+
+                    <Middle>
+                        <MiddleWrapper>
+                            {conversation ? <>
+                                <MessageTop>
+                                    <MiddleHeaderWrapper>
+                                        <UserImg src={conversation.isGroupChat ? "" : ""} />
+                                        <MessageBanner>{(conversation.isGroupChat) ? conversation.chatName : GetSenderId(currentUser._id, conversation.members)}</MessageBanner>
+                                        {conversation.isGroupChat ? <UpdateGroupChatModal conversation={conversation}
+                                            setConversation={setConversation}
+                                            selectedChat={selectedChat}
+                                            setSelectedChat={setSelectedChat}
+                                            fetchAgain={fetchAgain}
+                                            setFetchAgain={setFetchAgain}
+                                        >
                                             <Visibility />
-                                        </UserDetailsModal>
-                                    }
-                                </MiddleHeaderWrapper>
+                                        </UpdateGroupChatModal> :
+                                            <UserDetailsModal user={GetSenderDetails(currentUser._id, conversation.members)}>
+                                                <Visibility />
+                                            </UserDetailsModal>
+                                        }
+                                    </MiddleHeaderWrapper>
 
-                                {fetchMessages.map((message) =>
-                                    <div ref={scrollRef}>
-                                        <MessageBubbles message={message} />
-                                    </div>
-                                )}
-                            </MessageTop>
-                            <MessageBottom>
-                                <MessageArea>
-                                    <Editor setQuilValue={setQuilValue} />
-                                </MessageArea>
-                                <SendButton onClick={(e) => sendMessage(e)}><Send style={{ height: "15px", color: "lightgreen" }} /></SendButton>
+                                    {fetchMessages.map((message) =>
+                                        <div ref={scrollRef}>
+                                            <MessageBubbles message={message} />
+                                        </div>
+                                    )}
+                                </MessageTop>
+                                <MessageBottom>
+                                    <MessageArea>
+                                        <Editor setQuilValue={setQuilValue} />
+                                    </MessageArea>
+                                    <SendButton onClick={(e) => sendMessage(e)}><Send style={{ height: "15px", color: "lightgreen" }} /></SendButton>
 
-                            </MessageBottom>
-                        </>
-                            : <NoCoversation>Select a chat ,to start a conversation</NoCoversation>}
-                    </MiddleWrapper>
-                </Middle>
-                <Right>
-                    <RightWrapper>
-                        <MyProfile>Profile</MyProfile>
-                        <OnlineWrapper>
-                            <ProfileDetails>
-                                <MyProfilePic src={currentUser?.profilePicture ? currentUser.profilePicture : "https://cdn-icons-png.flaticon.com/512/172/172163.png?w=1060&t=st=1691305872~exp=1691306472~hmac=3096a18a59c140eed2e3a902cb714c6f5df5bf71ad7cfe7f3a29487ee8ea3418"} />
-                                <UserName>{currentUser?.userName}</UserName>
-                                <UserName>{currentUser?.email}</UserName>
-                                <ButtonWrapper>
-                                    <MyButton onClick={handleUpdateProfile}>Update</MyButton>
-                                    <MyButton onClick={handleLogout} >LogOut</MyButton>
-                                </ButtonWrapper>
-                            </ProfileDetails>
-                        </OnlineWrapper>
-                    </RightWrapper>
-                </Right>
-            </Container>
-        </Fragment>
-    )
-}
+                                </MessageBottom>
+                            </>
+                                : <NoCoversation>Select a chat ,to start a conversation</NoCoversation>}
+                        </MiddleWrapper>
+                    </Middle>
+                    <Right>
+                        <RightWrapper>
+                            <MyProfile>Profile</MyProfile>
+                            <OnlineWrapper>
+                                <ProfileDetails>
+                                    <MyProfilePic src={currentUser?.profilePicture ? currentUser.profilePicture : "https://cdn-icons-png.flaticon.com/512/172/172163.png?w=1060&t=st=1691305872~exp=1691306472~hmac=3096a18a59c140eed2e3a902cb714c6f5df5bf71ad7cfe7f3a29487ee8ea3418"} />
+                                    <UserName>{currentUser?.userName}</UserName>
+                                    <UserName>{currentUser?.email}</UserName>
+                                    <ButtonWrapper>
+                                        <MyButton onClick={handleUpdateProfile}>Update</MyButton>
+                                        <MyButton onClick={handleLogout} >LogOut</MyButton>
+                                    </ButtonWrapper>
+                                </ProfileDetails>
+                            </OnlineWrapper>
+                        </RightWrapper>
+                    </Right>
+                </Container>
+            </Fragment>
+        )
+    }
 
 export default Messenger
