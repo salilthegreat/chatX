@@ -44,7 +44,7 @@ border: none;
 border-radius: 10px;
 font-weight: 400;
 font-size: 14px;
-background-color: lightpink;
+background-color: lightblue;
 color: #FFFFFF;
 /* width: 100%; */
 cursor: pointer;
@@ -174,26 +174,35 @@ export default function UpdateGroupChatModal({ children, fetchAgain, setFetchAga
         }
     }
     const handleRemoveFromGroup = async (removeUser) => {
-        if (currentUser._id === conversation.admin._id || currentUser._id === removeUser._id) {
+        if (currentUser._id !== conversation.admin._id && currentUser._id !== removeUser._id) {
+            toast("Only admin can do this");
+            return;
+        }
+
             try {
                 const res = await userRequest.put("/chats/removemember", {
                     chatId: conversation._id,
                     userId: removeUser._id
                 })
-                if (currentUser._id === removeUser._id) {
+
+                if (currentUser._id == removeUser._id) {
                     setSelectedChat("")
                     setConversation(null)
                     setFetchAgain(!fetchAgain)
-                    toast("Sucessfully left the group")
+                    // setAddedToGroup(addedTOGroup.filter((user) => user._id !== removeUser._id))
                 } else {
+                    setAddedToGroup(addedTOGroup.filter((user) => user._id !== removeUser._id))
                     handleCleanUp(res.data)
                     toast("User Removed successfully")
                 }
             } catch (error) {
                 toast(error.response.message)
             }
-        }
-        setAddedToGroup(addedTOGroup.filter((user) => user._id !== removeUser._id))
+    
+    }
+
+    const handleLeaven= (currentUser) =>{
+
     }
 
     const handleCleanUp = (response) => {
@@ -201,7 +210,7 @@ export default function UpdateGroupChatModal({ children, fetchAgain, setFetchAga
         setSelectedChat(response)
         setConversation(response)
     }
-
+console.log(currentUser._id,conversation.admin._id)
     return (
         <div>
             <span onClick={handleOpen}>{children}</span>

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { styled } from "styled-components"
-// import { userRequest } from '../requestMetohd'
+
+
 
 const Users = styled.div`
 display: flex;
@@ -24,20 +24,22 @@ cursor: pointer;
 `
 
 const MessageUsers = ({ chat }) => {
-  // const dispatch = useDispatch()
   const { currentUser } = useSelector((state) => state.user)
   const friend = chat?.members.filter((item) => item._id !== currentUser._id)[0]
 
   return (
     <>
-      {(chat?.members.length ==2) ? <Users >
-        <UserImg src={friend?.profilePicture ? friend.profilePicture : 'https://www.personality-insights.com/wp-content/uploads/2017/12/default-profile-pic-e1513291410505.jpg'} />
-        <UserName>{friend?.userName}</UserName>
-      </Users> :
+      {(chat?.isGroupChat) ?
         <Users >
-          <UserImg src='https://img.freepik.com/free-vector/character-illustration-people-holding-user-account-icons_53876-43022.jpg?w=1800&t=st=1691305960~exp=1691306560~hmac=adc17d188786071bc1604a15af03fb6aadf6831520d1c5d70ec96ac71fbe8466'/>
+          <UserImg src='https://img.freepik.com/free-vector/character-illustration-people-holding-user-account-icons_53876-43022.jpg?w=1800&t=st=1691305960~exp=1691306560~hmac=adc17d188786071bc1604a15af03fb6aadf6831520d1c5d70ec96ac71fbe8466' />
           <UserName>{chat?.chatName}</UserName>
         </Users>
+        :
+        <Users >
+          <UserImg src={friend?.profilePicture ? friend.profilePicture : 'https://www.personality-insights.com/wp-content/uploads/2017/12/default-profile-pic-e1513291410505.jpg'} />
+          <UserName>{friend?.userName}</UserName>
+        </Users>
+
       }
     </>
   )

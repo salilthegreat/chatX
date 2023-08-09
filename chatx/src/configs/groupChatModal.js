@@ -44,7 +44,7 @@ border: none;
 border-radius: 10px;
 font-weight: 400;
 font-size: 14px;
-background-color: lightpink;
+background-color: lightblue;
 color: #FFFFFF;
 cursor: pointer;
 

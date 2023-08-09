@@ -79,6 +79,27 @@ router.get("/search", verifyToken, async (req, res) => {
     }
 })
 
+//UPDATE USER
+router.put("/update/:userId", verifyToken, async (req, res) => {
+    try {
+        if (req.body.userName) {
+            const user = await User.findOne({ userName: req.body.userName });
+            if (user) {
+                return res.status(401).json("Username already taken")
+            }
+        }
+        if (req.body.password) {
+            req.body.password = await bcrypt.hash(req.body.password, 10);
+        }
+        const updatedUser = await User.findByIdAndUpdate(req.params.userId, { $set: req.body }, { new: true })
+        const accessToken = jwt.sign({ userId: updatedUser._id, userName:updatedUser.userName }, process.env.JWT_SECRET)
+        res.status(200).json({ ...updatedUser._doc, accessToken })
+    } catch (error) {
+        res.status(500).json(error)
+    }
+
+})
+
 
 
 module.exports = router

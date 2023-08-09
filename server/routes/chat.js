@@ -30,7 +30,7 @@ router.post("/createchat", verifyToken, async (req, res) => {
 //FIND ALL CHATS OF A USER
 router.get("/getallchat", verifyToken, async (req, res) => {
     try {
-        let chats = await Chat.find({ members: { $in: [req.user.userId] } }).populate("members", "-password").populate("admin","-password").sort({ updatedAt: -1 });
+        let chats = await Chat.find({ members: { $in: [req.user.userId] } }).populate("members", "-password").populate("admin","-password").populate("latestMessage").sort({ updatedAt: -1 });
         chats = await User.populate(chats, { path: "latestMessage.sender", select: "-password" })
         res.status(200).json(chats)
 
@@ -98,7 +98,7 @@ router.put("/removemember",verifyToken,async(req,res)=>{
     try {      
         const{chatId,userId} = req.body;
         const chat = await Chat.findById(chatId).populate("admin")
-        if(chat.admin._id == req.user.userId){
+        if(chat.admin._id == req.user.userId || userId === req.user.userId){
          const updatedChat =   await Chat.findByIdAndUpdate(chatId,{$pull:{members:userId}},{new:true}).populate("members","-password").populate("admin","-password")
         return res.status(200).json(updatedChat)
         }else{

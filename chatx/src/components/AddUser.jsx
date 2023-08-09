@@ -7,7 +7,7 @@ const NameContainer = styled.div`
     place-items: center;
     padding: 3px 2px;
     margin: 1px 1px 2px 1px;
-    background-color: lightpink;
+    background-color: lightblue;
     color: white;
     cursor: pointer;
     &:hover{

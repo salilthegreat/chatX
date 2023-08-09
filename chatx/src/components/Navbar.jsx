@@ -9,23 +9,18 @@ const Nav = styled.div`
   font-weight: 700;
   font-size: 24px;
   position: sticky;
-  /* position: absolute; */
   top: 0%;
   width: 100%;
   z-index:111;
-  background-color:white
+  background-color:white;
+  color:"lightblue"
 `
-const SPAN1 = styled.span`
-color:lightpink
-`
-const SPAN2 = styled.span`
-color: lightblue;
-`
+
 
 const Navbar = () => {
   return (
-    <Nav><SPAN1>chat</SPAN1><SPAN2>X</SPAN2></Nav>
-  )
+    <Nav>chatX</Nav>
+  );
 }
 
 export default Navbar
